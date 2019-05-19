@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/pkg/errors"
 )
@@ -16,62 +15,59 @@ func main() {
 }
 
 func run() {
-	var (
-		width float64 = 800
-		height float64 = 32
-		moveSpeed float64 = 100
-		checkIn = time.Now()
-		checkOut = checkIn.Add(30*time.Minute)
-	)
+	conf := Config{
+		WorkDuration:  8 * time.Hour,
+		LunchDuration: 1 * time.Hour,
+		DayEnd:        ClockTime{Hour: 20, Minute: 00},
 
-	win, err := NewWindow(width, height)
+		WindowWidth:  512,
+		WindowHeight: 32,
+		VSync:        true,
+	}
+
+	today := time.Now()
+	year, month, day := today.Date()
+	checkIn := time.Date(year, month, day, 9, 30, 0, 0, time.Local)
+	checkOut := checkIn.Add(conf.WorkDuration).Add(conf.LunchDuration)
+	endOfDay := conf.DayEnd.Time(today)
+
+	win, err := NewWindow(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// winCenter := win.Bounds().Center()
+	r, err := NewRender(conf, checkIn, checkOut, endOfDay)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fps := time.Tick(time.Second / 30)
-
-	rect := Rect(width, height)
-
 	last := time.Now()
 	for !win.Closed() {
 		dt := time.Since(last).Seconds()
 		last = time.Now()
 
-		winPos := win.GetPos()
-		switch {
-		case win.Pressed(pixelgl.KeyRight):
-			winPos.X += moveSpeed*dt
-			win.SetPos(winPos)
-		case win.Pressed(pixelgl.KeyLeft):
-			winPos.X -= moveSpeed*dt
-			win.SetPos(winPos)
-		case win.Pressed(pixelgl.KeyDown):
-			winPos.Y += moveSpeed*dt
-			win.SetPos(winPos)
-		case win.Pressed(pixelgl.KeyUp):
-			winPos.Y -= moveSpeed*dt
-			win.SetPos(winPos)
-		}
-
 		win.Clear(color.White)
-		rect.Draw(win)
-		DrawMarker(win, checkIn, checkOut)
+		HandleInput(win, dt)
+		r.Draw(win)
 		win.Update()
 
-		// TODO
 		<-fps
 	}
 }
 
-func NewWindow(width, height float64) (*pixelgl.Window, error) {
+func NewWindow(conf Config) (*pixelgl.Window, error) {
+	width := float64(conf.WindowWidth)
+	height := float64(conf.WindowHeight)
+
 	cfg := pixelgl.WindowConfig{
-		Title:  "Go Home",
-		Bounds: pixel.R(0, 0, width, height),
-		VSync:  true,
+		Title:       "Go Home",
+		Bounds:      pixel.R(0, 0, width, height),
+		VSync:       conf.VSync,
 		Undecorated: true,
-		Resizable: true,
+		Resizable:   false,
+		Floating:    true,
+		AutoIconify: true,
 	}
 
 	// TODO: we need GLFW 3.3 where we get the GLFW_TRANSPARENT_FRAMEBUFFER option
@@ -84,66 +80,14 @@ func NewWindow(width, height float64) (*pixelgl.Window, error) {
 
 	win.SetSmooth(true)
 
-	var displayWidth, displayHeight float64 = 1920, 1080
+	var displayWidth float64 = 1920 // TODO: make dynamic
 	pos := pixel.Vec{
-		X: displayWidth/2-width/2,
-		Y: displayHeight-height-5,
+		X: displayWidth/2 - width/2,
+		Y: 29,
 	}
 
 	win.SetPos(pos)
 	win.Update()
 
 	return win, nil
-}
-
-func Rect(width, height float64) *imdraw.IMDraw {
-	rect := imdraw.New(nil)
-	rect.Color = pixel.RGB(0, 1, 0)
-	rect.Push(pixel.V(0, 0))
-	rect.Push(pixel.V(0, height))
-
-	rect.Color = pixel.RGB(1, 0, 0)
-	rect.Push(pixel.V(width, height))
-	rect.Push(pixel.V(width, 0))
-	rect.Polygon(0)
-
-	return rect
-}
-
-func DrawMarker(win *pixelgl.Window, checkIn, checkOut time.Time) {
-	var (
-		in  = float64(checkIn.Unix())
-		out = float64(checkOut.Unix())
-		now = float64(time.Now().Unix())
-	)
-
-	totalSec := out - in
-	diffSec := now -in
-	d := diffSec/totalSec
-
-	bounds := win.Bounds()
-	posX := bounds.Max.X*d
-
-	imd := imdraw.New(nil)
-	imd.Color = color.Black
-	imd.Push(pixel.V(posX, 0))
-	imd.Push(pixel.V(posX, bounds.Max.Y))
-	imd.Line(1)
-	imd.Draw(win)
-
-	imd = imdraw.New(nil)
-	imd.Color = color.Black
-	imd.Push(pixel.V(posX-5, 0))
-	imd.Push(pixel.V(posX+5, 0))
-	imd.Push(pixel.V(posX, 5))
-	imd.Polygon(0)
-	imd.Draw(win)
-
-	imd = imdraw.New(nil)
-	imd.Color = color.Black
-	imd.Push(pixel.V(posX-5, bounds.Max.Y))
-	imd.Push(pixel.V(posX+5, bounds.Max.Y))
-	imd.Push(pixel.V(posX, bounds.Max.Y-5))
-	imd.Polygon(0)
-	imd.Draw(win)
 }
