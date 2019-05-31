@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"io/ioutil"
+	"math"
 	"os"
 	"time"
 
@@ -16,14 +17,14 @@ import (
 )
 
 type Render struct {
-	Width, Height float64
-	CheckIn       time.Time
-	CheckOut      time.Time
-	EOD           time.Time
-	Atlas         *text.Atlas
-	MarkerColor   color.Color
-	ShowTimeLeft  bool          // show how much time is left instead of the current time
-	timeShift     time.Duration // for debugging
+	Width, Height     float64
+	CheckIn           time.Time
+	CheckOut          time.Time
+	EOD               time.Time
+	Atlas             *text.Atlas
+	MarkerColor       color.Color
+	ShowRemainingTime bool          // show how much time is left instead of the current time
+	timeShift         time.Duration // for debugging
 }
 
 func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
@@ -33,14 +34,14 @@ func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, e
 	}
 
 	return &Render{
-		Width:        float64(conf.WindowWidth),
-		Height:       float64(conf.WindowHeight),
-		CheckIn:      checkIn,
-		CheckOut:     checkOut,
-		EOD:          endOfDay,
-		Atlas:        text.NewAtlas(fnt, text.ASCII),
-		MarkerColor:  colornames.Mediumblue,
-		ShowTimeLeft: true,
+		Width:             float64(conf.WindowWidth),
+		Height:            float64(conf.WindowHeight),
+		CheckIn:           checkIn,
+		CheckOut:          checkOut,
+		EOD:               endOfDay,
+		Atlas:             text.NewAtlas(fnt, text.ASCII),
+		MarkerColor:       colornames.Mediumblue,
+		ShowRemainingTime: conf.ShowRemainingTime,
 	}, nil
 }
 
@@ -79,7 +80,7 @@ func (r *Render) Draw(t pixel.Target) {
 	r.drawText(t, txt)
 	r.drawCurrentMarker(t, progress, txt)
 	r.drawTargetMarker(t, progress)
-	r.drawRectangle(t)
+	r.drawRectangle(t, now)
 }
 
 func (r *Render) drawGradient(t pixel.Target, progress float64) {
@@ -174,7 +175,7 @@ func (r *Render) markerText(progress float64, now time.Time) *text.Text {
 		txt.Color = color.Black
 	}
 
-	if r.ShowTimeLeft {
+	if r.ShowRemainingTime {
 		remaining := r.CheckOut.Sub(now).Round(time.Minute)
 		s := remaining.String()
 		s = s[:len(s)-2] // strip away trailing seconds
@@ -186,11 +187,20 @@ func (r *Render) markerText(progress float64, now time.Time) *text.Text {
 	return txt
 }
 
-func (r *Render) drawRectangle(t pixel.Target) {
+func (r *Render) drawRectangle(t pixel.Target, now time.Time) {
 	var borderWidth float64 = 2
 
 	rect := imdraw.New(nil)
-	rect.Color = color.Black
+	if now.Before(r.CheckOut) {
+		rect.Color = color.Black
+	} else {
+		// Pulsating red border
+		totalMillis := int(float64(now.UnixNano()) / float64(time.Millisecond))
+		scale := (1 + math.Sin(float64(totalMillis)/500)) / 2
+		rect.Color = pixel.ToRGBA(colornames.Red).Mul(pixel.RGB(scale, scale, scale))
+		borderWidth = 4
+	}
+
 	rect.EndShape = imdraw.RoundEndShape
 	rect.Push(pixel.V(1, 1))
 	rect.Push(pixel.V(1, r.Height-1))

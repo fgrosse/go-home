@@ -29,30 +29,34 @@ type Config struct {
 }
 
 type UIConfig struct {
-	WindowWidth  int `yaml:"width"`
-	WindowHeight int `yaml:"height"`
+	FPS               int  `yaml:"fps"`
+	WindowWidth       int  `yaml:"width"`
+	WindowHeight      int  `yaml:"height"`
+	ShowRemainingTime bool `yaml:"show_remaining_time"`
 }
 
-func (app *App) loadConfig(verbose *bool, path string) func() {
+func (app *App) loadConfig(debug *bool, path *string) func() {
 	return func() {
-		app.logger = newLogger(*verbose)
+		app.logger = newLogger(*debug)
 		if app.initErr != nil {
 			return
 		}
 
+		app.logger.Debug("Running in debug mode")
+
 		var r io.Reader
-		if f, err := os.Open(path); err == nil {
-			app.logger.Info("Loading configuration", zap.String("path", path))
+		if f, err := os.Open(*path); err == nil {
+			app.logger.Info("Loading configuration", zap.String("path", *path))
 			r = f
 			defer f.Close()
 		} else if os.IsNotExist(err) {
-			app.logger.Info("Configuration file not found. Creating new file", zap.String("path", path))
+			app.logger.Info("Configuration file not found. Creating new file", zap.String("path", *path))
 		} else {
 			app.initErr = errors.Wrap(err, "failed to open config file")
 			return
 		}
 
-		app.conf, app.initErr = LoadConfig(r, app.logger)
+		app.conf, app.initErr = LoadConfig(r, app.logger, *debug)
 		if app.initErr != nil {
 			return
 		}
@@ -63,7 +67,7 @@ func (app *App) loadConfig(verbose *bool, path string) func() {
 			return
 		}
 
-		err = ioutil.WriteFile(path, data, 0666)
+		err = ioutil.WriteFile(*path, data, 0666)
 		if err != nil {
 			app.initErr = errors.Wrap(err, "failed to save config")
 			return
@@ -71,7 +75,7 @@ func (app *App) loadConfig(verbose *bool, path string) func() {
 	}
 }
 
-func LoadConfig(r io.Reader, logger *zap.Logger) (Config, error) {
+func LoadConfig(r io.Reader, logger *zap.Logger, debug bool) (Config, error) {
 	var conf Config
 	if r != nil {
 		dec := yaml.NewDecoder(r)
@@ -97,6 +101,9 @@ func LoadConfig(r io.Reader, logger *zap.Logger) (Config, error) {
 	if conf.DayEnd.Hour == 0 {
 		conf.DayEnd = ClockTime{Hour: 20, Minute: 00}
 	}
+	if conf.UI.FPS == 0 {
+		conf.UI.FPS = 10
+	}
 	if conf.CheckIn.IsZero() || isDifferentDay(conf.CheckIn, time.Now()) {
 		conf.CheckIn = time.Now()
 		logger.Info("Detected start of new day", zap.String("date", conf.CheckIn.Format("2006-01-02")))
@@ -105,6 +112,7 @@ func LoadConfig(r io.Reader, logger *zap.Logger) (Config, error) {
 	conf.CheckIn = conf.CheckIn.Round(time.Second)
 	conf.CheckOut = conf.CheckIn.Add(conf.WorkDuration).Add(conf.LunchDuration)
 	conf.EndOfDay = conf.DayEnd.Time(conf.CheckIn)
+	conf.Debug = debug
 
 	return conf, nil
 }

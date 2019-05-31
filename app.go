@@ -33,15 +33,15 @@ func NewApp() *App {
 	app.Command.RunE = app.Run
 
 	var (
-		verbose bool
-		config  string
+		debug  bool
+		config string
 	)
 
 	flags := app.PersistentFlags()
-	flags.BoolVarP(&verbose, "verbose", "v", false, "enable debug output")
 	flags.StringVar(&config, "config", os.ExpandEnv("$HOME/.go-home.yml"), "config file")
+	flags.BoolVar(&debug, "debug", false, "enable debug mode")
 
-	cobra.OnInitialize(app.loadConfig(&verbose, config))
+	cobra.OnInitialize(app.loadConfig(&debug, &config))
 
 	return app
 }
@@ -103,7 +103,7 @@ func newWindow(conf UIConfig) (*pixelgl.Window, error) {
 }
 
 func (app *App) runLoop() {
-	fps := time.Tick(time.Second / 30)
+	fps := time.Tick(time.Second / time.Duration(app.conf.UI.FPS))
 	last := time.Now()
 	for !app.win.Closed() {
 		dt := time.Since(last).Seconds()
