@@ -22,6 +22,7 @@ type Render struct {
 	EOD           time.Time
 	Atlas         *text.Atlas
 	MarkerColor   color.Color
+	timeShift     time.Duration
 }
 
 func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
@@ -66,21 +67,39 @@ func loadTTF(path string, size float64) (font.Face, error) {
 
 func (r *Render) Draw(t pixel.Target) {
 	now := time.Now()
+	now = now.Add(r.timeShift)
 
-	r.drawGradient(t)
+	r.drawGradient(t, now)
 	r.drawCells(t)
 	r.drawText(t)
-	r.drawMarker(t, now)
+	r.drawTargetMarker(t)
+	r.drawCurrentMarker(t, now)
 	r.drawRectangle(t)
 }
 
-func (r *Render) drawGradient(t pixel.Target) {
+func (r *Render) drawGradient(t pixel.Target, now time.Time) {
+	leftColor := pixel.RGB(0, 1, 0)
+	delta := r.progress(now)
+	rightColor := pixel.RGB(delta, 1-delta, 0)
+
 	rect := imdraw.New(nil)
-	rect.Color = pixel.RGB(0, 1, 0)
+	rect.Color = leftColor
 	rect.Push(pixel.V(0, 0))
 	rect.Push(pixel.V(0, r.Height))
 
-	rect.Color = pixel.RGB(1, 0, 0)
+	rect.Color = rightColor
+	rect.Push(pixel.V(r.Width*delta, r.Height))
+	rect.Push(pixel.V(r.Width*delta, 0))
+	rect.Polygon(0)
+	rect.Draw(t)
+
+	// draw gray scale gradient
+	rect = imdraw.New(nil)
+	rect.Color = pixel.RGB(0.333, 0.333, 0.333).Scaled(delta)
+	rect.Push(pixel.V(r.Width*delta+1, 0))
+	rect.Push(pixel.V(r.Width*delta+1, r.Height))
+
+	rect.Color = pixel.RGB(0.333, 0.333, 0.333)
 	rect.Push(pixel.V(r.Width, r.Height))
 	rect.Push(pixel.V(r.Width, 0))
 	rect.Polygon(0)
@@ -100,7 +119,18 @@ func (r *Render) drawCells(t pixel.Target) {
 	}
 }
 
-func (r *Render) drawMarker(t pixel.Target, now time.Time) {
+func (r *Render) drawTargetMarker(t pixel.Target) {
+	posX := r.position(r.CheckOut)
+
+	imd := imdraw.New(nil)
+	imd.Color = color.Black
+	imd.Push(pixel.V(posX, 2))
+	imd.Push(pixel.V(posX, r.Height-2))
+	imd.Line(2)
+	imd.Draw(t)
+}
+
+func (r *Render) drawCurrentMarker(t pixel.Target, now time.Time) {
 	posX := r.position(now)
 
 	imd := imdraw.New(nil)
@@ -162,12 +192,20 @@ func (r *Render) drawText(t pixel.Target) {
 }
 
 func (r *Render) position(t time.Time) float64 {
-	in := float64(r.CheckIn.Unix())
-	out := float64(r.EOD.Unix())
-	nowUnix := float64(t.Unix())
+	return r.Width * r.progress(t)
+}
 
-	totalSec := out - in
-	diffSec := nowUnix - in
-	d := diffSec / totalSec
-	return r.Width * d
+func (r *Render) progress(now time.Time) float64 {
+	left := float64(r.CheckIn.Unix())
+	right := float64(r.EOD.Unix())
+	nowUnix := float64(now.Unix())
+
+	totalSec := right - left
+	diffSec := nowUnix - left
+	return diffSec / totalSec
+}
+
+func grayScale(c pixel.RGBA) pixel.RGBA {
+	v := (c.R + c.G + c.B) / 3
+	return pixel.RGB(v, v, v)
 }

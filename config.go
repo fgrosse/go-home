@@ -17,7 +17,7 @@ import (
 
 type Config struct {
 	CheckIn  time.Time `yaml:"check_in"`
-	CheckOut time.Time `yaml:"check_out"`
+	CheckOut time.Time `yaml:"-"`
 	EndOfDay time.Time `yaml:"-"`
 
 	WorkDuration  time.Duration `yaml:"work_duration"`
