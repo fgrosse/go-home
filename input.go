@@ -18,5 +18,7 @@ func (app *App) handleInput(win *pixelgl.Window, dt float64) {
 		app.render.timeShift += time.Duration(speed * dt)
 	case win.Pressed(pixelgl.KeyLeft):
 		app.render.timeShift -= time.Duration(speed * dt)
+	case win.Pressed(pixelgl.KeyEscape):
+		app.shutdown = true
 	}
 }

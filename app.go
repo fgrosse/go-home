@@ -19,8 +19,9 @@ type App struct {
 	win    *pixelgl.Window
 	render *Render
 
-	checkIn time.Time
-	initErr error
+	checkIn  time.Time
+	initErr  error
+	shutdown bool
 }
 
 func NewApp() *App {
@@ -115,6 +116,10 @@ func (app *App) runLoop() {
 		app.handleInput(app.win, dt)
 		app.render.Draw(app.win)
 		app.win.Update()
+
+		if app.shutdown {
+			return
+		}
 
 		<-fps
 	}
