@@ -4,7 +4,7 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 )
 
-func HandleInput(win *pixelgl.Window, dt float64) {
+func (app *App) handleInput(win *pixelgl.Window, dt float64) {
 	const moveSpeed float64 = 100
 
 	winPos := win.GetPos()

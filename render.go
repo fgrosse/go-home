@@ -3,7 +3,6 @@ package main
 import (
 	"image/color"
 	"io/ioutil"
-	"log"
 	"os"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/text"
 	"github.com/golang/freetype/truetype"
+	"github.com/pkg/errors"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
 )
@@ -24,10 +24,10 @@ type Render struct {
 	MarkerColor   color.Color
 }
 
-func NewRender(conf Config, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
-	font, err := loadTTF("assets/GlacialIndifference-Regular.ttf", 10)
+func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
+	fnt, err := loadTTF("assets/GlacialIndifference-Regular.ttf", 10)
 	if err != nil {
-		log.Fatal("Failed to load font: ", err)
+		return nil, errors.Wrap(err, "failed to load font")
 	}
 
 	return &Render{
@@ -36,7 +36,7 @@ func NewRender(conf Config, checkIn, checkOut, endOfDay time.Time) (*Render, err
 		CheckIn:     checkIn,
 		CheckOut:    checkOut,
 		EOD:         endOfDay,
-		Atlas:       text.NewAtlas(font, text.ASCII),
+		Atlas:       text.NewAtlas(fnt, text.ASCII),
 		MarkerColor: colornames.Mediumblue,
 	}, nil
 }
@@ -53,12 +53,12 @@ func loadTTF(path string, size float64) (font.Face, error) {
 		return nil, err
 	}
 
-	font, err := truetype.Parse(bytes)
+	fnt, err := truetype.Parse(bytes)
 	if err != nil {
 		return nil, err
 	}
 
-	return truetype.NewFace(font, &truetype.Options{
+	return truetype.NewFace(fnt, &truetype.Options{
 		Size:              size,
 		GlyphCacheEntries: 1,
 	}), nil

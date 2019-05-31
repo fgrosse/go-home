@@ -1,29 +1,21 @@
 package main
 
 import (
-	"log"
-	"time"
+	"fmt"
+	"os"
 
 	"github.com/faiface/pixel/pixelgl"
 )
 
 func main() {
-	conf := Config{
-		WorkDuration:  8 * time.Hour,
-		LunchDuration: 1 * time.Hour,
-		DayEnd:        ClockTime{Hour: 20, Minute: 00},
-
-		WindowWidth:  512,
-		WindowHeight: 32,
-		VSync:        true,
-	}
-
+	var err error
 	pixelgl.Run(func() {
-		app, err := NewApp(conf)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		app.Run()
+		cmd := NewApp()
+		err = cmd.Execute()
 	})
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR:", err)
+		os.Exit(1)
+	}
 }

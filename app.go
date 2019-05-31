@@ -2,70 +2,82 @@ package main
 
 import (
 	"image/color"
-	"log"
+	"os"
 	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 type App struct {
-	win *pixelgl.Window
+	*cobra.Command
+	logger *zap.Logger
+	conf   Config
+	win    *pixelgl.Window
 	render *Render
+
+	checkIn time.Time
+	initErr error
 }
 
-func NewApp(conf Config) (*App, error) {
-	today := time.Now()
-	year, month, day := today.Date()
-	checkIn := time.Date(year, month, day, 9, 30, 0, 0, time.Local)
-	checkOut := checkIn.Add(conf.WorkDuration).Add(conf.LunchDuration)
-	endOfDay := conf.DayEnd.Time(today)
+func NewApp() *App {
+	app := &App{Command: &cobra.Command{
+		Use: "go-home",
+	}}
 
-	win, err := newWindow(conf)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create window")
+	app.SilenceUsage = true  // do not output usage in case of an error
+	app.SilenceErrors = true // we log them manually in the main function
+	app.Command.RunE = app.Run
+
+	var (
+		verbose bool
+		config  string
+	)
+
+	flags := app.PersistentFlags()
+	flags.BoolVarP(&verbose, "verbose", "v", false, "enable debug output")
+	flags.StringVar(&config, "config", os.ExpandEnv("$HOME/.go-home.yml"), "config file")
+
+	cobra.OnInitialize(app.loadConfig(&verbose, config))
+
+	return app
+}
+
+func (app *App) Run(_ *cobra.Command, _ []string) error {
+	if app.initErr != nil {
+		return app.initErr
 	}
 
-	r, err := NewRender(conf, checkIn, checkOut, endOfDay)
+	var err error
+	app.logger.Info("Starting application", zap.Object("config", app.conf))
+	app.win, err = newWindow(app.conf.UI)
 	if err != nil {
-		log.Fatal(err)
+		return errors.Wrap(err, "failed to create window")
 	}
 
-	return &App{
-		win: win,
-		render: r,
-	}, nil
+	app.render, err = NewRender(app.conf.UI, app.conf.CheckIn, app.conf.CheckOut, app.conf.EndOfDay)
+	if err != nil {
+		return errors.Wrap(err, "failed to create renderer")
+	}
+
+	app.runLoop()
+	return nil
 }
 
-func (app *App) Run() {
-		fps := time.Tick(time.Second / 30)
-		last := time.Now()
-		for !app.win.Closed() {
-			dt := time.Since(last).Seconds()
-			last = time.Now()
-
-			app.win.Clear(color.White)
-			HandleInput(app.win, dt)
-			app.render.Draw(app.win)
-			app.win.Update()
-
-			<-fps
-		}
-}
-
-func newWindow(conf Config) (*pixelgl.Window, error) {
+func newWindow(conf UIConfig) (*pixelgl.Window, error) {
 	width := float64(conf.WindowWidth)
 	height := float64(conf.WindowHeight)
 
 	cfg := pixelgl.WindowConfig{
 		Title:       "Go Home",
 		Bounds:      pixel.R(0, 0, width, height),
-		VSync:       conf.VSync,
+		VSync:       true,
 		Undecorated: true,
 		Resizable:   false,
-		Floating:    true,
-		AutoIconify: true,
+		AlwaysOnTop: true,
 	}
 
 	// TODO: we need GLFW 3.3 where we get the GLFW_TRANSPARENT_FRAMEBUFFER option
@@ -88,4 +100,22 @@ func newWindow(conf Config) (*pixelgl.Window, error) {
 	win.Update()
 
 	return win, nil
+}
+
+func (app *App) runLoop() {
+	fps := time.Tick(time.Second / 30)
+	last := time.Now()
+	for !app.win.Closed() {
+		dt := time.Since(last).Seconds()
+		last = time.Now()
+
+		// TODO: deal with a new dawn
+
+		app.win.Clear(color.White)
+		app.handleInput(app.win, dt)
+		app.render.Draw(app.win)
+		app.win.Update()
+
+		<-fps
+	}
 }
