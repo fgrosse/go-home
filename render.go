@@ -22,7 +22,8 @@ type Render struct {
 	EOD           time.Time
 	Atlas         *text.Atlas
 	MarkerColor   color.Color
-	timeShift     time.Duration
+	ShowTimeLeft  bool          // show how much time is left instead of the current time
+	timeShift     time.Duration // for debugging
 }
 
 func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
@@ -32,13 +33,14 @@ func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, e
 	}
 
 	return &Render{
-		Width:       float64(conf.WindowWidth),
-		Height:      float64(conf.WindowHeight),
-		CheckIn:     checkIn,
-		CheckOut:    checkOut,
-		EOD:         endOfDay,
-		Atlas:       text.NewAtlas(fnt, text.ASCII),
-		MarkerColor: colornames.Mediumblue,
+		Width:        float64(conf.WindowWidth),
+		Height:       float64(conf.WindowHeight),
+		CheckIn:      checkIn,
+		CheckOut:     checkOut,
+		EOD:          endOfDay,
+		Atlas:        text.NewAtlas(fnt, text.ASCII),
+		MarkerColor:  colornames.Mediumblue,
+		ShowTimeLeft: true,
 	}, nil
 }
 
@@ -68,19 +70,19 @@ func loadTTF(path string, size float64) (font.Face, error) {
 func (r *Render) Draw(t pixel.Target) {
 	now := time.Now()
 	now = now.Add(r.timeShift)
+	progress := r.progress(now)
 
-	r.drawGradient(t, now)
+	r.drawGradient(t, progress)
 	r.drawCells(t)
 	r.drawText(t)
-	r.drawTargetMarker(t)
-	r.drawCurrentMarker(t, now)
+	r.drawTargetMarker(t, progress)
+	r.drawCurrentMarker(t, progress, now)
 	r.drawRectangle(t)
 }
 
-func (r *Render) drawGradient(t pixel.Target, now time.Time) {
+func (r *Render) drawGradient(t pixel.Target, progress float64) {
 	leftColor := pixel.RGB(0, 1, 0)
-	delta := r.progress(now)
-	rightColor := pixel.RGB(delta, 1-delta, 0)
+	rightColor := pixel.RGB(progress, 1-progress, 0)
 
 	rect := imdraw.New(nil)
 	rect.Color = leftColor
@@ -88,16 +90,16 @@ func (r *Render) drawGradient(t pixel.Target, now time.Time) {
 	rect.Push(pixel.V(0, r.Height))
 
 	rect.Color = rightColor
-	rect.Push(pixel.V(r.Width*delta, r.Height))
-	rect.Push(pixel.V(r.Width*delta, 0))
+	rect.Push(pixel.V(r.Width*progress, r.Height))
+	rect.Push(pixel.V(r.Width*progress, 0))
 	rect.Polygon(0)
 	rect.Draw(t)
 
 	// draw gray scale gradient
 	rect = imdraw.New(nil)
-	rect.Color = pixel.RGB(0.333, 0.333, 0.333).Scaled(delta)
-	rect.Push(pixel.V(r.Width*delta+1, 0))
-	rect.Push(pixel.V(r.Width*delta+1, r.Height))
+	rect.Color = pixel.RGB(0.333, 0.333, 0.333).Scaled(progress)
+	rect.Push(pixel.V(r.Width*progress+1, 0))
+	rect.Push(pixel.V(r.Width*progress+1, r.Height))
 
 	rect.Color = pixel.RGB(0.333, 0.333, 0.333)
 	rect.Push(pixel.V(r.Width, r.Height))
@@ -119,8 +121,8 @@ func (r *Render) drawCells(t pixel.Target) {
 	}
 }
 
-func (r *Render) drawTargetMarker(t pixel.Target) {
-	posX := r.position(r.CheckOut)
+func (r *Render) drawTargetMarker(t pixel.Target, progress float64) {
+	posX := progress * r.Width
 
 	imd := imdraw.New(nil)
 	imd.Color = color.Black
@@ -130,8 +132,8 @@ func (r *Render) drawTargetMarker(t pixel.Target) {
 	imd.Draw(t)
 }
 
-func (r *Render) drawCurrentMarker(t pixel.Target, now time.Time) {
-	posX := r.position(now)
+func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, now time.Time) {
+	posX := progress * r.Width
 
 	imd := imdraw.New(nil)
 	imd.Color = r.MarkerColor
@@ -159,8 +161,21 @@ func (r *Render) drawCurrentMarker(t pixel.Target, now time.Time) {
 	imd.Draw(t)
 
 	txt := text.New(pixel.V(posX+5, 4), r.Atlas)
-	txt.Color = r.MarkerColor
-	txt.WriteString(now.Format("15:04"))
+	if progress > 0.7 {
+		txt.Color = color.White
+	} else {
+		txt.Color = color.Black
+	}
+
+	if r.ShowTimeLeft {
+		remaining := r.CheckOut.Sub(now).Round(time.Minute)
+		s := remaining.String()
+		s = s[:len(s)-2] // strip away trailing seconds
+		txt.WriteString(s)
+	} else {
+		txt.WriteString(now.Format("15:04"))
+	}
+
 	txt.Draw(t, pixel.IM)
 }
 
@@ -203,9 +218,4 @@ func (r *Render) progress(now time.Time) float64 {
 	totalSec := right - left
 	diffSec := nowUnix - left
 	return diffSec / totalSec
-}
-
-func grayScale(c pixel.RGBA) pixel.RGBA {
-	v := (c.R + c.G + c.B) / 3
-	return pixel.RGB(v, v, v)
 }
