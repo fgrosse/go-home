@@ -27,7 +27,7 @@ type Render struct {
 }
 
 func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
-	fnt, err := loadTTF("assets/GlacialIndifference-Regular.ttf", 10)
+	fnt, err := loadTTF("assets/GlacialIndifference-Regular.ttf", 12)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load font")
 	}
@@ -72,11 +72,13 @@ func (r *Render) Draw(t pixel.Target) {
 	now = now.Add(r.timeShift)
 	progress := r.progress(now)
 
+	txt := r.markerText(progress, now)
+
 	r.drawGradient(t, progress)
 	r.drawCells(t)
-	r.drawText(t)
+	r.drawText(t, txt)
+	r.drawCurrentMarker(t, progress, txt)
 	r.drawTargetMarker(t, progress)
-	r.drawCurrentMarker(t, progress, now)
 	r.drawRectangle(t)
 }
 
@@ -122,17 +124,17 @@ func (r *Render) drawCells(t pixel.Target) {
 }
 
 func (r *Render) drawTargetMarker(t pixel.Target, progress float64) {
-	posX := progress * r.Width
+	posX := r.position(r.CheckOut)
 
 	imd := imdraw.New(nil)
-	imd.Color = color.Black
+	imd.Color = colornames.Black
 	imd.Push(pixel.V(posX, 2))
 	imd.Push(pixel.V(posX, r.Height-2))
 	imd.Line(2)
 	imd.Draw(t)
 }
 
-func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, now time.Time) {
+func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, txt *text.Text) {
 	posX := progress * r.Width
 
 	imd := imdraw.New(nil)
@@ -160,6 +162,11 @@ func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, now time.Ti
 	imd.Polygon(0)
 	imd.Draw(t)
 
+	txt.Draw(t, pixel.IM)
+}
+
+func (r *Render) markerText(progress float64, now time.Time) *text.Text {
+	posX := progress * r.Width
 	txt := text.New(pixel.V(posX+5, 4), r.Atlas)
 	if progress > 0.7 {
 		txt.Color = color.White
@@ -176,7 +183,7 @@ func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, now time.Ti
 		txt.WriteString(now.Format("15:04"))
 	}
 
-	txt.Draw(t, pixel.IM)
+	return txt
 }
 
 func (r *Render) drawRectangle(t pixel.Target) {
@@ -194,16 +201,20 @@ func (r *Render) drawRectangle(t pixel.Target) {
 	rect.Draw(t)
 }
 
-func (r *Render) drawText(t pixel.Target) {
+func (r *Render) drawText(t pixel.Target, markerTxt *text.Text) {
 	txt := text.New(pixel.V(4, 4), r.Atlas)
 	txt.Color = color.Black
 	txt.WriteString(r.CheckIn.Format("15:04"))
-	txt.Draw(t, pixel.IM)
+	if txt.Bounds().Intersect(markerTxt.Bounds()) == pixel.ZR {
+		txt.Draw(t, pixel.IM)
+	}
 
 	txt = text.New(pixel.V(4+r.position(r.CheckOut), 4), r.Atlas)
 	txt.Color = color.Black
 	txt.WriteString(r.CheckOut.Format("15:04"))
-	txt.Draw(t, pixel.IM)
+	if txt.Bounds().Intersect(markerTxt.Bounds()) == pixel.ZR {
+		txt.Draw(t, pixel.IM)
+	}
 }
 
 func (r *Render) position(t time.Time) float64 {
