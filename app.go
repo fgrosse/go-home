@@ -59,7 +59,7 @@ func (app *App) Run(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "failed to create window")
 	}
 
-	app.render, err = NewRender(app.conf.UI, app.conf.CheckIn, app.conf.CheckOut, app.conf.EndOfDay)
+	app.render, err = NewRender(app.conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to create renderer")
 	}

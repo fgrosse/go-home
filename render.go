@@ -27,26 +27,26 @@ type Render struct {
 	timeShift         time.Duration // for debugging
 }
 
-func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
-	fnt, err := loadTTF("/assets/GlacialIndifference-Regular.ttf", 12)
+func NewRender(conf Config) (*Render, error) {
+	fnt, err := loadTTF(conf.Debug, "/assets/GlacialIndifference-Regular.ttf", 12)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load font")
 	}
 
 	return &Render{
-		Width:             float64(conf.WindowWidth),
-		Height:            float64(conf.WindowHeight),
-		CheckIn:           checkIn,
-		CheckOut:          checkOut,
-		EOD:               endOfDay,
+		Width:             float64(conf.UI.WindowWidth),
+		Height:            float64(conf.UI.WindowHeight),
+		CheckIn:           conf.CheckIn,
+		CheckOut:          conf.CheckOut,
+		EOD:               conf.EndOfDay,
 		Atlas:             text.NewAtlas(fnt, text.ASCII),
 		MarkerColor:       colornames.Mediumblue,
-		ShowRemainingTime: conf.ShowRemainingTime,
+		ShowRemainingTime: conf.UI.ShowRemainingTime,
 	}, nil
 }
 
-func loadTTF(path string, size float64) (font.Face, error) {
-	bytes := assets.FSMustByte(false, path)
+func loadTTF(debug bool, path string, size float64) (font.Face, error) {
+	bytes := assets.FSMustByte(debug, path)
 	fnt, err := truetype.Parse(bytes)
 	if err != nil {
 		return nil, err
