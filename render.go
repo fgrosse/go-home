@@ -2,14 +2,13 @@ package main
 
 import (
 	"image/color"
-	"io/ioutil"
 	"math"
-	"os"
 	"time"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/text"
+	"github.com/fgrosse/go-home/assets"
 	"github.com/golang/freetype/truetype"
 	"github.com/pkg/errors"
 	"golang.org/x/image/colornames"
@@ -29,7 +28,7 @@ type Render struct {
 }
 
 func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, error) {
-	fnt, err := loadTTF("assets/GlacialIndifference-Regular.ttf", 12)
+	fnt, err := loadTTF("/assets/GlacialIndifference-Regular.ttf", 12)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load font")
 	}
@@ -47,17 +46,7 @@ func NewRender(conf UIConfig, checkIn, checkOut, endOfDay time.Time) (*Render, e
 }
 
 func loadTTF(path string, size float64) (font.Face, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	bytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
+	bytes := assets.FSMustByte(false, path)
 	fnt, err := truetype.Parse(bytes)
 	if err != nil {
 		return nil, err
