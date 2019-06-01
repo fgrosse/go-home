@@ -94,7 +94,7 @@ func newWindow(conf UIConfig) (*pixelgl.Window, error) {
 	var displayWidth float64 = 1920 // TODO: make dynamic
 	pos := pixel.Vec{
 		X: displayWidth/2 - width/2,
-		Y: 29,
+		Y: 35,
 	}
 
 	win.SetPos(pos)

@@ -23,6 +23,7 @@ type Render struct {
 	EOD               time.Time
 	Atlas             *text.Atlas
 	MarkerColor       color.Color
+	BorderColor       color.Color
 	ShowRemainingTime bool          // show how much time is left instead of the current time
 	timeShift         time.Duration // for debugging
 }
@@ -73,13 +74,14 @@ func (r *Render) Draw(t pixel.Target) {
 	now = now.Add(r.timeShift)
 	progress := r.progress(now)
 
-	txt := r.markerText(progress, now)
+	markerTxt := r.markerText(progress, now)
+	checkoutTxt := r.checkoutText(now)
 
 	r.drawGradient(t, progress)
-	r.drawCells(t)
-	r.drawText(t, txt)
-	r.drawCurrentMarker(t, progress, txt)
-	r.drawTargetMarker(t, progress)
+	r.drawCells(t, markerTxt, checkoutTxt)
+	r.drawTargetMarker(t, progress, markerTxt)
+	r.drawCurrentMarker(t, progress, now, markerTxt)
+	r.drawText(t, now, markerTxt, checkoutTxt)
 	r.drawRectangle(t, now)
 }
 
@@ -111,12 +113,22 @@ func (r *Render) drawGradient(t pixel.Target, progress float64) {
 	rect.Draw(t)
 }
 
-func (r *Render) drawCells(t pixel.Target) {
+func (r *Render) drawCells(t pixel.Target, markerTxt, checkoutTxt *text.Text) {
 	numCells := 9
+	txtBounds := markerTxt.Bounds()
+	checkoutBounds := checkoutTxt.Bounds()
 	for i := 0; i < numCells; i++ {
 		x := r.Width * float64(i) / float64(numCells)
 		line := imdraw.New(nil)
 		line.Color = color.Black
+
+		v := pixel.V(x, r.Height/2)
+		if txtBounds.Contains(v) || checkoutBounds.Contains(v) {
+			col := pixel.ToRGBA(line.Color)
+			col.A = 0.1
+			line.Color = col
+		}
+
 		line.Push(pixel.V(x, 0))
 		line.Push(pixel.V(x, r.Height))
 		line.Line(1)
@@ -124,29 +136,38 @@ func (r *Render) drawCells(t pixel.Target) {
 	}
 }
 
-func (r *Render) drawTargetMarker(t pixel.Target, progress float64) {
+func (r *Render) drawTargetMarker(t pixel.Target, progress float64, markerTxt *text.Text) {
 	posX := r.position(r.CheckOut)
 
 	imd := imdraw.New(nil)
-	imd.Color = colornames.Black
+	col := pixel.RGB(0, 0, 0)
+	if markerTxt.Bounds().Contains(pixel.V(posX, r.Height/2)) {
+		col.A = 0.1
+	}
+
+	imd.Color = col
 	imd.Push(pixel.V(posX, 2))
 	imd.Push(pixel.V(posX, r.Height-2))
-	imd.Line(2)
+	imd.Line(3)
 	imd.Draw(t)
 }
 
-func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, txt *text.Text) {
+func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, now time.Time, txt *text.Text) {
 	posX := progress * r.Width
+	col := r.MarkerColor
+	if now.After(r.CheckOut) {
+		col = r.BorderColor
+	}
 
 	imd := imdraw.New(nil)
-	imd.Color = r.MarkerColor
+	imd.Color = col
 	imd.Push(pixel.V(posX, 2))
 	imd.Push(pixel.V(posX, r.Height-2))
 	imd.Line(2)
 	imd.Draw(t)
 
 	imd = imdraw.New(nil)
-	imd.Color = r.MarkerColor
+	imd.Color = col
 	imd.Push(pixel.V(posX-5, 2))
 	imd.Push(pixel.V(posX+1+5, 2))
 	imd.Push(pixel.V(posX+1, 5+2))
@@ -155,15 +176,13 @@ func (r *Render) drawCurrentMarker(t pixel.Target, progress float64, txt *text.T
 	imd.Draw(t)
 
 	imd = imdraw.New(nil)
-	imd.Color = r.MarkerColor
+	imd.Color = col
 	imd.Push(pixel.V(posX-5, r.Height-2))
 	imd.Push(pixel.V(posX+1+5, r.Height-2))
 	imd.Push(pixel.V(posX+1, r.Height-5-2))
 	imd.Push(pixel.V(posX, r.Height-5-2))
 	imd.Polygon(0)
 	imd.Draw(t)
-
-	txt.Draw(t, pixel.IM)
 }
 
 func (r *Render) markerText(progress float64, now time.Time) *text.Text {
@@ -187,20 +206,33 @@ func (r *Render) markerText(progress float64, now time.Time) *text.Text {
 	return txt
 }
 
+func (r *Render) checkoutText(now time.Time) *text.Text {
+	txt := text.New(pixel.V(4+r.position(r.CheckOut), 4), r.Atlas)
+	if now.Before(r.CheckOut) {
+		txt.Color = color.White
+	} else {
+		txt.Color = color.Black
+	}
+
+	txt.WriteString(r.CheckOut.Format("15:04"))
+	return txt
+}
+
 func (r *Render) drawRectangle(t pixel.Target, now time.Time) {
 	var borderWidth float64 = 2
 
 	rect := imdraw.New(nil)
 	if now.Before(r.CheckOut) {
-		rect.Color = color.Black
+		r.BorderColor = color.Black
 	} else {
 		// Pulsating red border
 		totalMillis := int(float64(now.UnixNano()) / float64(time.Millisecond))
 		scale := (1 + math.Sin(float64(totalMillis)/500)) / 2
-		rect.Color = pixel.ToRGBA(colornames.Red).Mul(pixel.RGB(scale, scale, scale))
+		r.BorderColor = pixel.ToRGBA(colornames.Red).Mul(pixel.RGB(scale, scale, scale))
 		borderWidth = 4
 	}
 
+	rect.Color = r.BorderColor
 	rect.EndShape = imdraw.RoundEndShape
 	rect.Push(pixel.V(1, 1))
 	rect.Push(pixel.V(1, r.Height-1))
@@ -211,20 +243,24 @@ func (r *Render) drawRectangle(t pixel.Target, now time.Time) {
 	rect.Draw(t)
 }
 
-func (r *Render) drawText(t pixel.Target, markerTxt *text.Text) {
+func (r *Render) drawText(t pixel.Target, now time.Time, markerTxt, checkoutTxt *text.Text) {
 	txt := text.New(pixel.V(4, 4), r.Atlas)
 	txt.Color = color.Black
 	txt.WriteString(r.CheckIn.Format("15:04"))
-	if txt.Bounds().Intersect(markerTxt.Bounds()) == pixel.ZR {
-		txt.Draw(t, pixel.IM)
+	bounds := txt.Bounds()
+
+	shift := r.Height/2 - bounds.Size().Y/2 - 1
+	m := pixel.IM.Moved(pixel.V(0, shift))
+
+	if bounds.Intersect(markerTxt.Bounds()) == pixel.ZR {
+		txt.Draw(t, m)
 	}
 
-	txt = text.New(pixel.V(4+r.position(r.CheckOut), 4), r.Atlas)
-	txt.Color = color.Black
-	txt.WriteString(r.CheckOut.Format("15:04"))
-	if txt.Bounds().Intersect(markerTxt.Bounds()) == pixel.ZR {
-		txt.Draw(t, pixel.IM)
+	if checkoutTxt.Bounds().Intersect(markerTxt.Bounds()) == pixel.ZR {
+		checkoutTxt.Draw(t, m)
 	}
+
+	markerTxt.Draw(t, m)
 }
 
 func (r *Render) position(t time.Time) float64 {
