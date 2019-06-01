@@ -59,8 +59,7 @@ func loadTTF(debug bool, path string, size float64) (font.Face, error) {
 }
 
 func (r *Render) Draw(t pixel.Target) {
-	now := time.Now()
-	now = now.Add(r.timeShift)
+	now := time.Now().Add(r.timeShift)
 	progress := r.progress(now)
 
 	markerTxt := r.markerText(progress, now)
@@ -91,11 +90,12 @@ func (r *Render) drawGradient(t pixel.Target, progress float64) {
 
 	// draw gray scale gradient
 	rect = imdraw.New(nil)
-	rect.Color = pixel.RGB(0.333, 0.333, 0.333).Scaled(progress)
+	gray := pixel.RGB(0.333, 0.333, 0.333)
+	rect.Color = gray.Scaled(progress)
 	rect.Push(pixel.V(r.Width*progress+1, 0))
 	rect.Push(pixel.V(r.Width*progress+1, r.Height))
 
-	rect.Color = pixel.RGB(0.333, 0.333, 0.333)
+	rect.Color = gray
 	rect.Push(pixel.V(r.Width, r.Height))
 	rect.Push(pixel.V(r.Width, 0))
 	rect.Polygon(0)
