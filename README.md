@@ -61,6 +61,7 @@ The available options in there should be pretty self explanatory.
 * [zap](https://github.com/uber-go/zap) - Blazing fast, structured, leveled logging in Go
 * [pkg/errors](https://github.com/pkg/errors) - Simple error handling primitives
 * [gopkg.in/yaml](gopkg.in/yaml.v3) - YAML support for the Go language 
+* [Glacial Indifference Font](https://fontlibrary.org/en/font/glacial-indifference) - An open source typeface by Alfredo Marco Pradil ([SIL Open Font License](LICENSE_FONT))
 
 ## Contributing
 
