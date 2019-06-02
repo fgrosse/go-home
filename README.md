@@ -1,5 +1,4 @@
-<h1 align="center">Go Home :clock10:</h1>
-<p align="center">An OpenGL based progress bar that lets you know when you should really go home after a long day at work 🧐.</p>
+<h2 align="center">Time to <i>Go Home</i> :clock10:</h2>
 <p align="center">
 	<a href="https://github.com/fgrosse/go-home/releases"><img src="https://img.shields.io/github/tag/fgrosse/go-home.svg?label=version&color=brightgreen"></a>
 	<a href="https://github.com/fgrosse/go-home/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg"></a>
@@ -12,9 +11,10 @@ how long you are working. This is helpful for people that tend to loose track of
 time and thus do overhours when they actually wanted to leave home. I made this
 to learn a bit about simple OpenGL programming using [the Go programming language][go].
 
-![Screenshot 01](assets/screenshot_01.png "Sceenshot01")
-
-![Screenshot 02](assets/screenshot_02.png "Sceenshot02")
+<p align="center">
+<img src="assets/screenshot_01.png">
+<img src="assets/screenshot_02.png">
+</p>
 
 ## Installation
 
