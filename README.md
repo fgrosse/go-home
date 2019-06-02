@@ -57,12 +57,12 @@ The available options in there should be pretty self explanatory.
 
 ## Built With
 
-* [pixel](github.com/faiface/pixel) - A hand-crafted 2D game library in Go
-* [glfw](github.com/go-gl/glfw) - Go bindings for GLFW 3
-* [cobra](github.com/spf13/cobra) - A Commander for modern Go CLI interactions 
+* [pixel](https://github.com/faiface/pixel) - A hand-crafted 2D game library in Go
+* [glfw](https://github.com/go-gl/glfw) - Go bindings for GLFW 3
+* [cobra](https://github.com/spf13/cobra) - A Commander for modern Go CLI interactions 
 * [zap](https://github.com/uber-go/zap) - Blazing fast, structured, leveled logging in Go
 * [pkg/errors](https://github.com/pkg/errors) - Simple error handling primitives
-* [gopkg.in/yaml](gopkg.in/yaml.v3) - YAML support for the Go language 
+* [gopkg.in/yaml](https://gopkg.in/yaml.v3) - YAML support for the Go language 
 * [Glacial Indifference Font](https://fontlibrary.org/en/font/glacial-indifference) - An open source typeface by Alfredo Marco Pradil ([SIL Open Font License](LICENSE_FONT))
 
 ## Contributing
