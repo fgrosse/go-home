@@ -8,9 +8,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 - Nothing so far
 
-## [v1.0.0] - 2019-06-02
+## [v1.0.1] - 2019-06-02
+- Fix panic when running in debug mode without Font file
 
-Initial release.
+## [v1.0.0] - 2019-06-02
+- Initial release.
 
 [Unreleased]: https://github.com/fgrosse/go-home/compare/v1.0.0...HEAD
 [v1.0.0]: https://github.com/fgrosse/go-home/releases/tag/v1.0.0

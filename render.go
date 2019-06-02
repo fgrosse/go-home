@@ -28,7 +28,7 @@ type Render struct {
 }
 
 func NewRender(conf Config) (*Render, error) {
-	fnt, err := loadTTF(conf.Debug, "/assets/GlacialIndifference-Regular.ttf", 12)
+	fnt, err := loadTTF("/assets/GlacialIndifference-Regular.ttf", 12)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load font")
 	}
@@ -45,8 +45,8 @@ func NewRender(conf Config) (*Render, error) {
 	}, nil
 }
 
-func loadTTF(debug bool, path string, size float64) (font.Face, error) {
-	bytes := assets.FSMustByte(debug, path)
+func loadTTF(path string, size float64) (font.Face, error) {
+	bytes := assets.FSMustByte(false, path)
 	fnt, err := truetype.Parse(bytes)
 	if err != nil {
 		return nil, err
