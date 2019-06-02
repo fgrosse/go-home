@@ -19,7 +19,6 @@ type App struct {
 	win    *pixelgl.Window
 	render *Render
 
-	checkIn  time.Time
 	initErr  error
 	shutdown bool
 }

@@ -1,0 +1,8 @@
+run:
+  modules-download-mode: readonly
+
+issues:
+  exclude-rules:
+    - linters:
+        - errcheck
+      text: "Error return value of `txt.WriteString` is not checked"
