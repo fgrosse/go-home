@@ -14,4 +14,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20190502103701-55513cacd4ae
 )
 
-replace github.com/faiface/pixel => ../pixel
+replace github.com/faiface/pixel => github.com/fgrosse/pixel v0.8.1-0.20190530122943-dd5e0d8b09c3
