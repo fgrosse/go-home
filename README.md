@@ -6,10 +6,11 @@
 
 ---
 
-Go Home is a small OpenGL based progress bar widget for your Desktop that tracks
-how long you are working. This is helpful for people that tend to loose track of
-time and thus do overhours when they actually wanted to leave home. I made this
-to learn a bit about simple OpenGL programming using [the Go programming language][go].
+Go Home is a small OpenGL based progress bar widget for your Desktop that
+displays for how long you have been working each day. This is helpful for people
+who tend to loose track of time and thus do overhours when they actually wanted
+to leave home. I made this to learn a bit about simple OpenGL programming using
+[the Go programming language][go].
 
 <p align="center">
 <img src="assets/screenshot_01.png">
@@ -20,17 +21,17 @@ to learn a bit about simple OpenGL programming using [the Go programming languag
 
 ### Precompiled binaries
 
-You can find precompiled binaries at the [Releases][releases] page of the GitHub
+You can find precompiled binaries at the [releases] page of the GitHub
 repository.
 
 ### From Source
 
 You need to make sure you have all external dependencies (i.e. OpenGL bindings)
 installed as explained at the [GLFW repository][external-deps].
-There is a [Makefile](Makefile) to install the requires libraries on Linux Fedora.
+There is a [Makefile](Makefile) to install the requires libraries on Fedora.
 
-Go Home is packaged using the new [Go modules][go-modules] so you can simply go
-get it with a a recent version of [the Go programming language][go] installed:
+Go Home is packaged using [Go modules][go-modules]. You can simply go get it
+with a a recent version of Go installed:
 
 ```
 go get github.com/fgrosse/go-home
@@ -45,7 +46,8 @@ working 8 hours a day and do 1 hour of lunch break.
 
 As time goes by the progress bar will slowly fill up from green to red. If you 
 are working overtime it will start to pulse red to catch your attention. At this
-point you should leave home and enjoy your free time with your family and friends :relaxed:.
+point you should leave home and enjoy your free time with your family and
+friends :relaxed:.
 
 ### Configuration
 

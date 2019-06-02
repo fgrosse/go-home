@@ -17,7 +17,7 @@ with the project.
 
 ## Code of Conduct
 
-We follow the **Gopher Code of Conduct** as described at https://golang.org/conduct `\ʕ◔ϖ◔ʔ/`
+This project follows the **Gopher Code of Conduct** as described at https://golang.org/conduct `\ʕ◔ϖ◔ʔ/`
 
 ### Our Pledge
 
