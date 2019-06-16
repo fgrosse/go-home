@@ -21,6 +21,7 @@ type App struct {
 
 	initErr  error
 	shutdown bool
+	limitFPS bool
 }
 
 func NewApp() *App {
@@ -53,7 +54,7 @@ func (app *App) Run(_ *cobra.Command, _ []string) error {
 
 	var err error
 	app.logger.Info("Starting application", zap.Object("config", app.conf))
-	app.win, err = newWindow(app.conf.UI)
+	err = app.createWindow(app.conf.UI)
 	if err != nil {
 		return errors.Wrap(err, "failed to create window")
 	}
@@ -64,10 +65,16 @@ func (app *App) Run(_ *cobra.Command, _ []string) error {
 	}
 
 	app.runLoop()
+
+	err = app.conf.Save()
+	if err != nil {
+		app.logger.Error("Failed to save configuration on shutdown", zap.Error(err))
+	}
+
 	return nil
 }
 
-func newWindow(conf UIConfig) (*pixelgl.Window, error) {
+func (app *App) createWindow(conf UIConfig) error {
 	width := float64(conf.WindowWidth)
 	height := float64(conf.WindowHeight)
 
@@ -83,26 +90,21 @@ func newWindow(conf UIConfig) (*pixelgl.Window, error) {
 	// TODO: we need GLFW 3.3 where we get the GLFW_TRANSPARENT_FRAMEBUFFER option
 	// See: https://www.glfw.org/docs/3.3/window_guide.html#window_hints_wnd
 
-	win, err := pixelgl.NewWindow(cfg)
+	var err error
+	app.win, err = pixelgl.NewWindow(cfg)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	win.SetSmooth(true)
+	app.win.SetSmooth(true)
+	app.win.SetPos(app.conf.UI.WindowPos)
+	app.win.Update()
 
-	var displayWidth float64 = 1920 // TODO: make dynamic
-	pos := pixel.Vec{
-		X: displayWidth/2 - width/2,
-		Y: 35,
-	}
-
-	win.SetPos(pos)
-	win.Update()
-
-	return win, nil
+	return nil
 }
 
 func (app *App) runLoop() {
+	app.limitFPS = true // might be disabled when moving the window via Shift+Arrow
 	fps := time.Tick(time.Second / time.Duration(app.conf.UI.FPS))
 	last := time.Now()
 	for !app.win.Closed() {
@@ -120,6 +122,8 @@ func (app *App) runLoop() {
 			return
 		}
 
-		<-fps
+		if app.limitFPS {
+			<-fps
+		}
 	}
 }

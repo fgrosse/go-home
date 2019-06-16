@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/faiface/pixel"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,13 +28,16 @@ type Config struct {
 
 	UI    UIConfig `yaml:"ui"`
 	Debug bool     `yaml:"-"`
+
+	path string `yaml:"-"`
 }
 
 type UIConfig struct {
-	FPS               int  `yaml:"fps"`
-	WindowWidth       int  `yaml:"width"`
-	WindowHeight      int  `yaml:"height"`
-	ShowRemainingTime bool `yaml:"show_remaining_time"`
+	FPS               int       `yaml:"fps"`
+	WindowWidth       int       `yaml:"width"`
+	WindowHeight      int       `yaml:"height"`
+	WindowPos         pixel.Vec `yaml:"pos"`
+	ShowRemainingTime bool      `yaml:"show_remaining_time"`
 }
 
 func (app *App) loadConfig(debug *bool, path *string) func() {
@@ -56,27 +61,17 @@ func (app *App) loadConfig(debug *bool, path *string) func() {
 			return
 		}
 
-		app.conf, app.initErr = LoadConfig(r, app.logger, *debug)
+		app.conf, app.initErr = LoadConfig(r, app.logger, *path, *debug)
 		if app.initErr != nil {
 			return
 		}
 
-		data, err := yaml.Marshal(app.conf)
-		if err != nil {
-			app.initErr = errors.Wrap(err, "failed to encode config as YAML")
-			return
-		}
-
-		err = ioutil.WriteFile(*path, data, 0666)
-		if err != nil {
-			app.initErr = errors.Wrap(err, "failed to save config")
-			return
-		}
+		app.initErr = app.conf.Save()
 	}
 }
 
-func LoadConfig(r io.Reader, logger *zap.Logger, debug bool) (Config, error) {
-	var conf Config
+func LoadConfig(r io.Reader, logger *zap.Logger, path string, debug bool) (Config, error) {
+	conf := Config{path: path}
 	if r != nil {
 		dec := yaml.NewDecoder(r)
 		dec.KnownFields(true)
@@ -92,6 +87,15 @@ func LoadConfig(r io.Reader, logger *zap.Logger, debug bool) (Config, error) {
 	if conf.UI.WindowHeight == 0 {
 		conf.UI.WindowHeight = 32
 	}
+
+	if conf.UI.WindowPos.X == 0 && conf.UI.WindowPos.Y == 0 {
+		var displayWidth float64 = 1920 // TODO: make dynamic
+		conf.UI.WindowPos = pixel.Vec{
+			X: displayWidth/2 - float64(conf.UI.WindowWidth)/2,
+			Y: 35,
+		}
+	}
+
 	if conf.WorkDuration == 0 {
 		conf.WorkDuration = 8 * time.Hour
 	}
@@ -121,6 +125,23 @@ func isDifferentDay(a, b time.Time) bool {
 	yearA, monthA, dayA := a.Date()
 	yearB, monthB, dayB := b.Date()
 	return yearA != yearB || monthA != monthB || dayA != dayB
+}
+
+func (conf Config) Save() error {
+	conf.UI.WindowPos.X = math.Round(conf.UI.WindowPos.X)
+	conf.UI.WindowPos.Y = math.Round(conf.UI.WindowPos.Y)
+
+	data, err := yaml.Marshal(conf)
+	if err != nil {
+		return errors.Wrap(err, "failed to encode config as YAML")
+	}
+
+	err = ioutil.WriteFile(conf.path, data, 0666)
+	if err != nil {
+		return errors.Wrap(err, "failed to save config")
+	}
+
+	return nil
 }
 
 func (conf Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
