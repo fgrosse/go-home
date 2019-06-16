@@ -26,15 +26,37 @@ repository.
 
 ### From Source
 
-You need to make sure you have all external dependencies (i.e. OpenGL bindings)
-installed as explained at the [GLFW repository][external-deps].
-There is a [Makefile](Makefile) to install the requires libraries on Fedora.
+Go Home is packaged using [Go modules][go-modules]. Since this is not a library
+but a runnable application within a `main` package you need to clone this
+repository first. Typically this should be done outside of the `$GOPATH` or Go
+will complain due Modules being enabled.
 
-Go Home is packaged using [Go modules][go-modules]. You can simply go get it
-with a a recent version of Go installed:
+After you cloned the repo you should make sure to install the external
+dependencies (i.e. OpenGL bindings) as explained at the
+[GLFW repository][external-deps]. There is a [Makefile](Makefile) to install the
+requires libraries on RedHead/Fedora.
 
-```
-go get github.com/fgrosse/go-home
+Afterwards you simply use `go build` or `go install` and Go will fetch the
+correct Go dependencies for you:
+ 
+```bash
+$ git clone https://github.com/fgrosse/go-home.git
+Cloning into 'go-home'...
+remote: Enumerating objects: 122, done.
+remote: Counting objects: 100% (122/122), done.
+remote: Compressing objects: 100% (69/69), done.
+remote: Total 122 (delta 62), reused 109 (delta 49), pack-reused 0
+Receiving objects: 100% (122/122), 71.62 KiB | 601.00 KiB/s, done.
+Resolving deltas: 100% (62/62), done.
+
+$ cd go-home               
+$ make setup
+…
+
+$ go install && go-home --debug
+2019-06-16 13:16	DEBUG	go-home/config.go:50	Running in debug mode
+2019-06-16 13:16	INFO	go-home/config.go:54	Loading configuration	{"path": "/home/fgrosse/.go-home.yml"}
+2019-06-16 13:16	INFO	go-home/app.go:56	Starting application	{"config": {"check_in": "2019-06-16 12:18", "work_duration": "8h0m0s", "lunch_duration": "1h0m0s", "day_end": "20:00"}}
 ```
 
 ## Usage
