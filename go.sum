@@ -12,8 +12,8 @@ github.com/faiface/glhf v0.0.0-20181018222622-82a6317ac380 h1:FvZ0mIGh6b3kOITxUn
 github.com/faiface/glhf v0.0.0-20181018222622-82a6317ac380/go.mod h1:zqnPFFIuYFFxl7uH2gYByJwIVKG7fRqlqQCbzAnHs9g=
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3 h1:baVdMKlASEHrj19iqjARrPbaRisD7EuZEVJj6ZMLl1Q=
 github.com/faiface/mainthread v0.0.0-20171120011319-8b78f0a41ae3/go.mod h1:VEPNJUlxl5KdWjDvz6Q1l+rJlxF2i6xqDeGuGAxa87M=
-github.com/fgrosse/pixel v0.8.1-0.20190530122943-dd5e0d8b09c3 h1:8y6W8SJ97E2xl8v28OaVxnnaiO4IU9RCABhZW9xsSpc=
-github.com/fgrosse/pixel v0.8.1-0.20190530122943-dd5e0d8b09c3/go.mod h1:HkgNgntJEbcU110aTE9K0ncxmVl1g7c4++PhYeqco70=
+github.com/faiface/pixel v0.9.0 h1:EtOO20jUkJ+SQAtWy19acwmhn/gowQNcfxpvfL8MTE0=
+github.com/faiface/pixel v0.9.0/go.mod h1:WkLfLymV31e/Ogv5OR3vtrNxRktTO3WXGWXiiSEg/j4=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
