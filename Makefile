@@ -16,4 +16,5 @@ setup-fedora:
 		libXcursor-devel \
 		libXrandr-devel \
 		libXinerama-devel \
-		libXi-devel
+		libXi-devel \
+		libXxf86vm-devel
